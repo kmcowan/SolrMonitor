@@ -43,18 +43,24 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
     private String solrBaseUrl = "";
     private final String propsFileName = "solr_monitor.properties";
     private long maxResponseTime = 100000;
+    private boolean firstRun = true;
 
     public SolrPingTimerTask() {
         init();
     }
 
     public void run() {
-
+     
         System.out.println("Ping SOLR...");
         String toEmail = props.getProperty("mail.to.email");
         String msg = "";
         String subject = "";
         try {
+            if(!firstRun){
+            cloudClient.connect();
+            } else {
+                firstRun = false;
+            }
             boolean online = true;
             SolrPingResponse resp = isOnline();
 
@@ -81,6 +87,7 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
                 sendmail(toEmail, subject, msg);
             }
 
+             cloudClient.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
