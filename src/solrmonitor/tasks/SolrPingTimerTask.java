@@ -24,7 +24,9 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import solrmonitor.auth.BasicAuthenticator;
 
@@ -78,13 +80,29 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
                 subject = "ZOOKEEPER RESPONSE TIME EXCEED MAX";
                 msg = "An attempt to connect to zookeeper at " + solrBaseUrl + " was successful, but slow.  Response time was:  " + resp.getElapsedTime();
             } else {
-                System.out.println("Solr is ONLINE..." + resp.getElapsedTime());
+                // level two.  Run a query. 
+                if(props.get("solr.test.query") != null){
+                    System.out.println("Running Solr Query Check with query: "+props.getProperty("solr.test.query")+"...");
+                SolrQuery query = new SolrQuery();
+                   query.setQuery(props.getProperty("solr.test.query"));
+                   query.setRows(10);
+                   QueryResponse qresp = cloudClient.query(query);
+                   if(qresp.getStatus() > 0){
+                       online = false;
+                       subject = "ERROR EXECUTING SOLR QUERY ";
+                       msg = "An error occurred when executing the query: ";
+                   }
+                }
+                
+               
             }
 
             if (!online) {
 
                 System.out.println("SOLR OFFLINE... SEND EMAIL! ");
                 sendmail(toEmail, subject, msg);
+            } else {
+                 System.out.println("Solr is ONLINE..." + resp.getElapsedTime());
             }
 
              cloudClient.close();
