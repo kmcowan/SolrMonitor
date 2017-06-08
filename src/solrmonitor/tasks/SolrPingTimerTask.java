@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import solrmonitor.auth.BasicAuthenticator;
+import solrmonitor.util.SolrClusterStateHelper;
 
 /**
  *
@@ -43,7 +44,7 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
     private Properties props = null;
     private CloudSolrClient cloudClient = null;
     private String solrBaseUrl = "";
-    private final String propsFileName = "solr_monitor.properties";
+    public static final String propsFileName = "solr_monitor.properties";
     private long maxResponseTime = 100000;
     private boolean firstRun = true;
 
@@ -79,9 +80,17 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
             } else if (resp.getElapsedTime() > maxResponseTime) {
                 subject = "ZOOKEEPER RESPONSE TIME EXCEED MAX";
                 msg = "An attempt to connect to zookeeper at " + solrBaseUrl + " was successful, but slow.  Response time was:  " + resp.getElapsedTime();
+           
             } else {
+                String message = SolrClusterStateHelper.checkShardState();
+                if(!message.equals("")){
+                    subject = "ONE OR MORE SOLR SHARDS HAS BECOME IN ACTIVE";
+                    msg += message;
+                    online = false;
+                }
                 // level two.  Run a query. 
-                if(props.get("solr.test.query") != null){
+                if(props.get("solr.test.query") != null && 
+                        !props.getProperty("solr.test.query").equals("")){
                     System.out.println("Running Solr Query Check with query: "+props.getProperty("solr.test.query")+"...");
                 SolrQuery query = new SolrQuery();
                    query.setQuery(props.getProperty("solr.test.query"));
@@ -90,7 +99,7 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
                    if(qresp.getStatus() > 0){
                        online = false;
                        subject = "ERROR EXECUTING SOLR QUERY ";
-                       msg = "An error occurred when executing the query: ";
+                       msg += "An error occurred when executing the query: ";
                    }
                 }
                 

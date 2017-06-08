@@ -1,0 +1,644 @@
+{
+	"cisco_doc_security": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard1": {
+				"replicas": {
+					"core_node1": {
+						"core": "cisco_doc_security_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-7fffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "1",
+		"autoAddReplicas": "false"
+	},
+	"cisco_doc_security_signals_aggr": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node1": {
+						"core": "cisco_doc_security_signals_aggr_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node2": {
+						"core": "cisco_doc_security_signals_aggr_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"FBO_Attachments": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard1": {
+				"replicas": {
+					"core_node1": {
+						"core": "FBO_Attachments_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-7fffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "1",
+		"autoAddReplicas": "false"
+	},
+	"Verizon_signals_aggr": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node2": {
+						"core": "Verizon_signals_aggr_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node1": {
+						"core": "Verizon_signals_aggr_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"__test__": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard1": {
+				"replicas": {
+					"core_node1": {
+						"core": "__test___shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-7fffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "1",
+		"autoAddReplicas": "false"
+	},
+	"__test___signals": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node1": {
+						"core": "__test___signals_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node2": {
+						"core": "__test___signals_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"Verizon_logs": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node1": {
+						"core": "Verizon_logs_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node2": {
+						"core": "Verizon_logs_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"FBO_Attachments_signals_aggr": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node1": {
+						"core": "FBO_Attachments_signals_aggr_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node2": {
+						"core": "FBO_Attachments_signals_aggr_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"cityofsacramento-rss-test-2_logs": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node1": {
+						"core": "cityofsacramento-rss-test-2_logs_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node2": {
+						"core": "cityofsacramento-rss-test-2_logs_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"audit_logs": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node2": {
+						"core": "audit_logs_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node1": {
+						"core": "audit_logs_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"__test___signals_aggr": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node2": {
+						"core": "__test___signals_aggr_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node1": {
+						"core": "__test___signals_aggr_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"Verizon_signals": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node1": {
+						"core": "Verizon_signals_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node2": {
+						"core": "Verizon_signals_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"cisco_doc_security_signals": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node1": {
+						"core": "cisco_doc_security_signals_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node2": {
+						"core": "cisco_doc_security_signals_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"cityofsacramento-rss-test-2": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard1": {
+				"replicas": {
+					"core_node1": {
+						"core": "cityofsacramento-rss-test-2_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-7fffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "1",
+		"autoAddReplicas": "false"
+	},
+	"cityofsacramento": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard1": {
+				"replicas": {
+					"core_node1": {
+						"core": "cityofsacramento_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-7fffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "1",
+		"autoAddReplicas": "false"
+	},
+	"Verizon": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard1": {
+				"replicas": {
+					"core_node1": {
+						"core": "Verizon_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-7fffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "1",
+		"autoAddReplicas": "false"
+	},
+	"__test___logs": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node2": {
+						"core": "__test___logs_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node1": {
+						"core": "__test___logs_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"FBO_Attachments_signals": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node2": {
+						"core": "FBO_Attachments_signals_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node1": {
+						"core": "FBO_Attachments_signals_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"cisco_doc_security_logs": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node1": {
+						"core": "cisco_doc_security_logs_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node2": {
+						"core": "cisco_doc_security_logs_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	},
+	"FBO_Attachments_logs": {
+		"replicationFactor": "1",
+		"shards": {
+			"shard2": {
+				"replicas": {
+					"core_node2": {
+						"core": "FBO_Attachments_logs_shard2_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "0-7fffffff",
+				"state": "active"
+			},
+			"shard1": {
+				"replicas": {
+					"core_node1": {
+						"core": "FBO_Attachments_logs_shard1_replica1",
+						"leader": "true",
+						"base_url": "http://192.168.0.209:8983/solr",
+						"node_name": "192.168.0.209:8983_solr",
+						"state": "active"
+					}
+				},
+				"range": "80000000-ffffffff",
+				"state": "active"
+			}
+		},
+		"router": {
+			"name": "compositeId"
+		},
+		"maxShardsPerNode": "2",
+		"autoAddReplicas": "false"
+	}
+}
