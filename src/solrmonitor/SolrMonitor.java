@@ -7,6 +7,7 @@ package solrmonitor;
 
 import java.io.File;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.Properties;
 import solrmonitor.tasks.SolrPingTimerTask;
 
@@ -26,15 +27,33 @@ public class SolrMonitor {
         try{
                Properties props = new Properties();
         props.load(new FileReader(new File(propsFileName)));
+        String hosts = props.getProperty("solr.hosts.to.monitor");
+        ArrayList<Runnable> tasks = new ArrayList<>();
+        if(hosts.contains(",")){
+            String[] solrHosts = hosts.split(",");
+            for(int j=0; j<solrHosts.length; j++){
+                 SolrPingTimerTask ttask = new SolrPingTimerTask(solrHosts[j]);
+                 tasks.add(ttask);
+            }
+        } else {
+            tasks.add(task);
+        }
         long loopTime = Long.parseLong(props.getProperty("monitor.loop.time"));
          while(true){
              System.out.println("Monitor Loop Run...");
-             task.run();
+             for(int i=0; i<tasks.size(); i++){
+               //task.run();
+               run(tasks.get(i));
+             }
              Thread.sleep(loopTime);
          }
         }catch(Exception e){
             e.printStackTrace();
         }
+    }
+    
+    private static synchronized void run(Runnable task){
+        task.run();
     }
     
 }

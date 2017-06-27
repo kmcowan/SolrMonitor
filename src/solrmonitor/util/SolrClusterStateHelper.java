@@ -103,7 +103,7 @@ public class SolrClusterStateHelper {
         return replicas;
     }
 
-    public static String checkShardState() {
+    public static String checkShardState(String host) {
         replicas = new ArrayList<>();
         String message = "";
         String solrBaseUrl = "";
@@ -115,7 +115,11 @@ public class SolrClusterStateHelper {
             } else {
                 solrBaseUrl = "http://";
             }
-            solrBaseUrl += props.getProperty("solr.host.port");
+             if(host != null){
+                 solrBaseUrl += host;
+             } else {
+               solrBaseUrl += props.getProperty("solr.host.port");
+             }
             String json = Utils.getURLContent(solrBaseUrl+"/solr/admin/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&view=graph&_=1496932225331");// Utils.streamToString(SolrClusterStateHelper.class.getResourceAsStream("test.json"));
             JSONObject jsono = new JSONObject(json);
             JSONObject data = new JSONObject(jsono.getJSONObject("znode").getString("data"));
@@ -151,6 +155,6 @@ public class SolrClusterStateHelper {
     }
 
     public static void main(String[] args) {
-        checkShardState();
+        checkShardState(null);
     }
 }

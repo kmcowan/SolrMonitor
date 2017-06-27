@@ -28,8 +28,11 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import solrmonitor.auth.BasicAuthenticator;
 import solrmonitor.util.SolrClusterStateHelper;
+import solrmonitor.util.Utils;
 
 /**
  *
@@ -47,20 +50,26 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
     public static final String propsFileName = "solr_monitor.properties";
     private long maxResponseTime = 100000;
     private boolean firstRun = true;
+    private String solrHost = null;
 
     public SolrPingTimerTask() {
         init();
     }
 
+    public SolrPingTimerTask(String solrHost) {
+        this.solrHost = solrHost;
+        init();
+    }
+
     public void run() {
-     
+
         System.out.println("Ping SOLR...");
         String toEmail = props.getProperty("mail.to.email");
         String msg = "";
         String subject = "";
         try {
-            if(!firstRun){
-            cloudClient.connect();
+            if (!firstRun) {
+                cloudClient.connect();
             } else {
                 firstRun = false;
             }
@@ -80,30 +89,29 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
             } else if (resp.getElapsedTime() > maxResponseTime) {
                 subject = "ZOOKEEPER RESPONSE TIME EXCEED MAX";
                 msg = "An attempt to connect to zookeeper at " + solrBaseUrl + " was successful, but slow.  Response time was:  " + resp.getElapsedTime();
-           
+
             } else {
-                String message = SolrClusterStateHelper.checkShardState();
-                if(!message.equals("")){
+                String message = SolrClusterStateHelper.checkShardState(solrHost);
+                if (!message.equals("")) {
                     subject = "ONE OR MORE SOLR SHARDS HAS BECOME IN ACTIVE";
                     msg += message;
                     online = false;
                 }
                 // level two.  Run a query. 
-                if(props.get("solr.test.query") != null && 
-                        !props.getProperty("solr.test.query").equals("")){
-                    System.out.println("Running Solr Query Check with query: "+props.getProperty("solr.test.query")+"...");
-                SolrQuery query = new SolrQuery();
-                   query.setQuery(props.getProperty("solr.test.query"));
-                   query.setRows(10);
-                   QueryResponse qresp = cloudClient.query(query);
-                   if(qresp.getStatus() > 0){
-                       online = false;
-                       subject = "ERROR EXECUTING SOLR QUERY ";
-                       msg += "An error occurred when executing the query: ";
-                   }
+                if (props.get("solr.test.query") != null
+                        && !props.getProperty("solr.test.query").equals("")) {
+                    System.out.println("Running Solr Query Check with query: " + props.getProperty("solr.test.query") + "...");
+                    SolrQuery query = new SolrQuery();
+                    query.setQuery(props.getProperty("solr.test.query"));
+                    query.setRows(10);
+                    QueryResponse qresp = cloudClient.query(query);
+                    if (qresp.getStatus() > 0) {
+                        online = false;
+                        subject = "ERROR EXECUTING SOLR QUERY ";
+                        msg += "An error occurred when executing the query: ";
+                    }
                 }
-                
-               
+
             }
 
             if (!online) {
@@ -111,10 +119,10 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
                 System.out.println("SOLR OFFLINE... SEND EMAIL! ");
                 sendmail(toEmail, subject, msg);
             } else {
-                 System.out.println("Solr is ONLINE..." + resp.getElapsedTime());
+                System.out.println("Solr is ONLINE..." + resp.getElapsedTime());
             }
 
-             cloudClient.close();
+            cloudClient.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -180,7 +188,7 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
 
     private synchronized void sendmail(String to, String subject, String msg) {
         // Recipient's email ID needs to be mentioned.
-        System.out.println("Sending: "+subject);
+        System.out.println("Sending: " + subject);
         Session session = null;
         Transport transport = null;
         boolean useAuth = false;
@@ -245,5 +253,26 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
         } catch (MessagingException mex) {
             mex.printStackTrace();
         }
+    }
+
+    public JSONArray getCollections() {
+        JSONArray collections = null;
+        String collectionUrl = "";
+        if (props.getProperty("solr.ssl.enabled").equals("true")) {
+            collectionUrl = "https://";
+        } else {
+            collectionUrl = "http://";
+        }
+
+        if (solrHost != null) {
+            collectionUrl += solrHost;
+        } else {
+            collectionUrl += props.getProperty("solr.host.port");
+        }
+        String response = Utils.getURLContent(collectionUrl + COLLECTION_LIST_URL_PART);
+        JSONObject obj = new JSONObject(response);
+        collections = obj.getJSONArray("collections");
+
+        return collections;
     }
 }
