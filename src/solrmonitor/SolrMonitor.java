@@ -30,12 +30,14 @@ public class SolrMonitor {
         String hosts = props.getProperty("solr.hosts.to.monitor");
         ArrayList<Runnable> tasks = new ArrayList<>();
         if(hosts.contains(",")){
+             System.out.println("RUNNING MULTIPLE MONITOR...");
             String[] solrHosts = hosts.split(",");
             for(int j=0; j<solrHosts.length; j++){
                  SolrPingTimerTask ttask = new SolrPingTimerTask(solrHosts[j]);
                  tasks.add(ttask);
             }
         } else {
+            System.out.println("RUNNING SINGLE MONITOR...");
             tasks.add(task);
         }
         long loopTime = Long.parseLong(props.getProperty("monitor.loop.time"));
