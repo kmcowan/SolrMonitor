@@ -44,6 +44,24 @@ public class Utils {
         return result;
     }
 
+    public static boolean isHTML(byte[] bytes) {
+        if (new String(bytes).toLowerCase().contains("<html>")) {
+            return true;
+        }
+        return false;
+    }
+
+    public static byte[] streamToBytes(InputStream in) {
+        byte result[] = new byte[0];
+        try {
+            result = new byte[in.available()];
+            in.read(result);
+        } catch (Exception e) {
+            // e.printStackTrace();
+        }
+        return result;
+    }
+
     public static String writeBytesToFile(String filePath, String content) {
         String path = "";
         try {
@@ -170,53 +188,54 @@ public class Utils {
         return (OS.contains("sunos"));
 
     }
-    
-    public static String getURLContent(String url){
+
+    public static String getURLContent(String url) {
         String result = "";
-        try{
+        try {
             //http://localhost:8983/solr/admin/zookeeper?wt=json&detail=true&path=%2Fclusterstate.json&view=graph&_=1496932225331
-       
-                 TrustManager[] trustAllCerts = new TrustManager[] {new X509TrustManager() {
+
+            TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
                 public java.security.cert.X509Certificate[] getAcceptedIssuers() {
                     return null;
                 }
+
                 public void checkClientTrusted(X509Certificate[] certs, String authType) {
                 }
+
                 public void checkServerTrusted(X509Certificate[] certs, String authType) {
                 }
             }
-        };
- 
-        // Install the all-trusting trust manager
-        SSLContext sc = SSLContext.getInstance("SSL");
-        sc.init(null, trustAllCerts, new java.security.SecureRandom());
-        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
- 
-        // Create all-trusting host name verifier
-        HostnameVerifier allHostsValid = new HostnameVerifier() {
-            public boolean verify(String hostname, SSLSession session) {
-                return true;
-            }
-        };
- 
-        // Install the all-trusting host verifier
-        HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
-        
-        URL oracle = new URL(url);
-        BufferedReader in = new BufferedReader(
-        new InputStreamReader(oracle.openStream()));
+            };
 
-        String inputLine;
-        while ((inputLine = in.readLine()) != null){
-           // System.out.println(inputLine);
-           result += inputLine;
-        }
-        in.close();
-        }catch(Exception e){
+            // Install the all-trusting trust manager
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+            // Create all-trusting host name verifier
+            HostnameVerifier allHostsValid = new HostnameVerifier() {
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            };
+
+            // Install the all-trusting host verifier
+            HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+
+            URL oracle = new URL(url);
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(oracle.openStream()));
+
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                // System.out.println(inputLine);
+                result += inputLine;
+            }
+            in.close();
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return result;
     }
-    
-    
+
 }

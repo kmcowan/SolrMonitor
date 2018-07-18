@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import solrmonitor.auth.BasicAuthenticator;
+import solrmonitor.util.Log;
 import solrmonitor.util.SolrClusterStateHelper;
 import solrmonitor.util.Utils;
 
@@ -75,27 +76,41 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
             }
             boolean online = true;
             SolrPingResponse resp = isOnline();
+            JSONObject json = new JSONObject();
+            json.put("timestamp", System.currentTimeMillis());
 
             if (resp == null) {
                 System.out.println("Ping Response was NULL");
                 online = false;
                 subject = "ZOOKEEPER CONNECTION FAILED";
-                msg = "An attempt to connect to zookeeper at " + solrBaseUrl + " was failed. ";
+                msg = "Attempt to connect to zookeeper at " + solrBaseUrl + " failed. ";
+                json.put("zk_status", Status.NO_ZOOKEEPER);
+                json.put("zk_status_msg", Status.NO_ZOOKEEPER.name());
             } else if (resp.getStatus() != 0) {
                 online = false;
                 System.out.println("Ping Response was STATUS was: " + resp.getStatus());
                 subject = "ZOOKEEPER RETURNED ERROR CODE";
                 msg = "An attempt to connect to zookeeper at " + solrBaseUrl + " was failed. Error Code received:  " + resp.getStatus() + " response time: " + resp.getElapsedTime();
+                json.put("zk_status", Status.ZOOKEEPER_ERROR);
+                json.put("zk_status_msg", Status.ZOOKEEPER_ERROR.name());
             } else if (resp.getElapsedTime() > maxResponseTime) {
                 subject = "ZOOKEEPER RESPONSE TIME EXCEED MAX";
                 msg = "An attempt to connect to zookeeper at " + solrBaseUrl + " was successful, but slow.  Response time was:  " + resp.getElapsedTime();
-
+                json.put("zk_status", Status.ZOOKEEPER_TIMEOUT);
+                json.put("zk_status_msg", Status.ZOOKEEPER_TIMEOUT.name());
             } else {
                 String message = SolrClusterStateHelper.checkShardState(solrHost);
                 if (!message.equals("")) {
-                    subject = "ONE OR MORE SOLR SHARDS HAS BECOME IN ACTIVE";
+                    subject = "ONE OR MORE SOLR SHARDS HAS BECOME INACTIVE";
                     msg += message;
                     online = false;
+                  //  json.put("cluster_status", Status.CLUSTER_STATE_CONTAINS_INACTIVE_REPLICAS);
+                  //  json.put("cluster_status_msg", Status.CLUSTER_STATE_CONTAINS_INACTIVE_REPLICAS.name());
+
+                } else {
+                    json.put("cluster_status", Status.CLUSTER_STATE_OKAY);
+                    json.put("cluster_status_msg", Status.CLUSTER_STATE_OKAY.name());
+                    Log.logRollup(Status.CLUSTER_STATE_OKAY, System.currentTimeMillis());
                 }
                 // level two.  Run a query. 
                 if (props.get("solr.test.query") != null
@@ -109,6 +124,9 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
                         online = false;
                         subject = "ERROR EXECUTING SOLR QUERY ";
                         msg += "An error occurred when executing the query: ";
+                        json.put("query_status", Status.QUERY_FAIL);
+                        json.put("query_status_msg", Status.QUERY_FAIL.name());
+                       Log.logRollup(Status.QUERY_FAIL, System.currentTimeMillis());
                     }
                 }
 
@@ -118,11 +136,17 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
 
                 System.out.println("SOLR OFFLINE... SEND EMAIL! ");
                 sendmail(toEmail, subject, msg);
+                json.put("status", Status.SOLR_DOWN);
+                json.put("status_msg", Status.SOLR_DOWN.name());
             } else {
                 System.out.println("Solr is ONLINE..." + resp.getElapsedTime());
+                json.put("status", Status.OK);
+                json.put("status_msg", Status.OK.name());
+                Log.logRollup(Status.OK, System.currentTimeMillis());
             }
 
             cloudClient.close();
+            StatsUpdateTask.addToQueue(json);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -274,5 +298,27 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
         collections = obj.getJSONArray("collections");
 
         return collections;
+    }
+
+    public static enum Status {
+        OK,
+        NO_ZOOKEEPER,
+        ZOOKEEPER_ERROR,
+        ZOOKEEPER_TIMEOUT,
+        ZOOKEEPER_OK,
+        NO_SOLR,
+        SOLR_ERROR,
+        SOLR_DOWN,
+        CLUSTER_STATE_OKAY,
+        CLUSTER_STATE_RECOVERY,
+        CLUSTER_STATE_CONTAINS_INACTIVE_REPLICAS,
+        CLUSTER_STATE_REPLICA_DOWN,
+        QUERY_FAIL,
+        EXCEPTION_500,
+        API_DOWN,
+        API_OKAY,
+        API_CLIENT_ERROR,
+        API_SERVER_ERROR
+
     }
 }
