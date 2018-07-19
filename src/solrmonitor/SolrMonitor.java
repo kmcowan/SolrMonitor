@@ -8,8 +8,12 @@ package solrmonitor;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Properties;
 import java.util.Timer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import solrmonitor.tasks.APICheckTask;
 import solrmonitor.tasks.SolrPingTimerTask;
 import solrmonitor.tasks.StatsRollupTask;
@@ -31,12 +35,16 @@ public class SolrMonitor {
     private static boolean isRunningWebMode = false;
     private static boolean isPrintingHelp = false;
     private static boolean isReInit = false;
+    private static final long START_DATE = System.currentTimeMillis();
+    private static final Calendar START_DATE_CAL = Calendar.getInstance();
+    private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(10);
 
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
         setFlags(args);
+        START_DATE_CAL.setTime(new Date(START_DATE));
         if (isRunningTermMode) {
 
             initTERM(args);
@@ -76,6 +84,7 @@ public class SolrMonitor {
         StatsUpdateTask statsTask = new StatsUpdateTask();
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(statsTask, 500, 5000);
+     
 
         try {
 
@@ -161,7 +170,8 @@ public class SolrMonitor {
     }
 
     private static synchronized void run(Runnable task) {
-        task.run();
+       // task.run();
+        EXECUTOR.execute(task);
     }
 
     public static Properties getProperties() {
@@ -173,6 +183,20 @@ public class SolrMonitor {
             }
         }
         return PROPERTIES;
+    }
+
+    /**
+     * @return the START_DATE
+     */
+    public static long getSTART_DATE() {
+        return START_DATE;
+    }
+
+    /**
+     * @return the START_DATE_CAL
+     */
+    public static Calendar getSTART_DATE_CAL() {
+        return START_DATE_CAL;
     }
 
 }

@@ -46,7 +46,9 @@ public class APICheckTask extends TimerTask implements Runnable {
                 Log.logRollup(SolrPingTimerTask.Status.API_OKAY, System.currentTimeMillis());
             } else {
                 int status = response.getStatusLine().getStatusCode();
-                if(status > 399 && status < 499){
+                if(status < 299){
+                     Log.logRollup(SolrPingTimerTask.Status.API_OKAY, System.currentTimeMillis());
+                } else  if(status > 399 && status < 499){
                      Log.logRollup(SolrPingTimerTask.Status.API_CLIENT_ERROR, System.currentTimeMillis());
                 } else if(status > 499){
                      Log.logRollup(SolrPingTimerTask.Status.API_SERVER_ERROR, System.currentTimeMillis());
@@ -57,6 +59,7 @@ public class APICheckTask extends TimerTask implements Runnable {
               
         }catch(Exception e){
             e.printStackTrace();
+             Log.logRollup(SolrPingTimerTask.Status.API_DOWN, System.currentTimeMillis());
         }
     }
     

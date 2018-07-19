@@ -80,12 +80,13 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
             json.put("timestamp", System.currentTimeMillis());
 
             if (resp == null) {
-                System.out.println("Ping Response was NULL");
+                Log.log(getClass(), "Ping Response was NULL");
                 online = false;
                 subject = "ZOOKEEPER CONNECTION FAILED";
                 msg = "Attempt to connect to zookeeper at " + solrBaseUrl + " failed. ";
                 json.put("zk_status", Status.NO_ZOOKEEPER);
                 json.put("zk_status_msg", Status.NO_ZOOKEEPER.name());
+                Log.logRollup(Status.NO_ZOOKEEPER, System.currentTimeMillis());
             } else if (resp.getStatus() != 0) {
                 online = false;
                 System.out.println("Ping Response was STATUS was: " + resp.getStatus());
@@ -93,20 +94,23 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
                 msg = "An attempt to connect to zookeeper at " + solrBaseUrl + " was failed. Error Code received:  " + resp.getStatus() + " response time: " + resp.getElapsedTime();
                 json.put("zk_status", Status.ZOOKEEPER_ERROR);
                 json.put("zk_status_msg", Status.ZOOKEEPER_ERROR.name());
+                Log.logRollup(Status.ZOOKEEPER_ERROR, System.currentTimeMillis());
             } else if (resp.getElapsedTime() > maxResponseTime) {
                 subject = "ZOOKEEPER RESPONSE TIME EXCEED MAX";
                 msg = "An attempt to connect to zookeeper at " + solrBaseUrl + " was successful, but slow.  Response time was:  " + resp.getElapsedTime();
                 json.put("zk_status", Status.ZOOKEEPER_TIMEOUT);
                 json.put("zk_status_msg", Status.ZOOKEEPER_TIMEOUT.name());
+                Log.logRollup(Status.ZOOKEEPER_TIMEOUT, System.currentTimeMillis());
             } else {
+                Log.logRollup(Status.ZOOKEEPER_OK, System.currentTimeMillis());
                 String message = SolrClusterStateHelper.checkShardState(solrHost);
                 if (!message.equals("")) {
                     subject = "ONE OR MORE SOLR SHARDS HAS BECOME INACTIVE";
                     msg += message;
                     online = false;
-                  //  json.put("cluster_status", Status.CLUSTER_STATE_CONTAINS_INACTIVE_REPLICAS);
-                  //  json.put("cluster_status_msg", Status.CLUSTER_STATE_CONTAINS_INACTIVE_REPLICAS.name());
-
+                    json.put("cluster_status", Status.CLUSTER_STATE_CONTAINS_INACTIVE_REPLICAS);
+                    json.put("cluster_status_msg", Status.CLUSTER_STATE_CONTAINS_INACTIVE_REPLICAS.name());
+                    Log.logRollup(Status.CLUSTER_STATE_CONTAINS_INACTIVE_REPLICAS, System.currentTimeMillis());
                 } else {
                     json.put("cluster_status", Status.CLUSTER_STATE_OKAY);
                     json.put("cluster_status_msg", Status.CLUSTER_STATE_OKAY.name());
@@ -115,7 +119,7 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
                 // level two.  Run a query. 
                 if (props.get("solr.test.query") != null
                         && !props.getProperty("solr.test.query").equals("")) {
-                    System.out.println("Running Solr Query Check with query: " + props.getProperty("solr.test.query") + "...");
+                    Log.log(getClass(), "Running Solr Query Check with query: " + props.getProperty("solr.test.query") + "...");
                     SolrQuery query = new SolrQuery();
                     query.setQuery(props.getProperty("solr.test.query"));
                     query.setRows(10);
@@ -126,7 +130,9 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
                         msg += "An error occurred when executing the query: ";
                         json.put("query_status", Status.QUERY_FAIL);
                         json.put("query_status_msg", Status.QUERY_FAIL.name());
-                       Log.logRollup(Status.QUERY_FAIL, System.currentTimeMillis());
+                        Log.logRollup(Status.QUERY_FAIL, System.currentTimeMillis());
+                    } else {
+                        // Log.logRollup(Status.OK, System.currentTimeMillis());
                     }
                 }
 
@@ -149,6 +155,7 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
             StatsUpdateTask.addToQueue(json);
         } catch (Exception e) {
             e.printStackTrace();
+            Log.logRollup(Status.EXCEPTION_500, System.currentTimeMillis());
         }
     }
 
@@ -315,6 +322,7 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
         CLUSTER_STATE_REPLICA_DOWN,
         QUERY_FAIL,
         EXCEPTION_500,
+        EXCEPTION_400,
         API_DOWN,
         API_OKAY,
         API_CLIENT_ERROR,

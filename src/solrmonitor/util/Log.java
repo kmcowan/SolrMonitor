@@ -119,6 +119,7 @@ public class Log {
         int month = cal.get(Calendar.MONTH);
         int day = cal.get(Calendar.DAY_OF_MONTH);
         int hour = cal.get(Calendar.HOUR_OF_DAY);
+        int year = cal.get(Calendar.YEAR);
         Log.log(" month: " + month + " day: " + day + " hour: " + hour);
 
         if (logRollup == null) {
@@ -138,7 +139,15 @@ public class Log {
                     if (currCount >= saveEveryXTimes) {
                         currCount = 0;
                         Log.log(Log.class, "SAVING...");
+                        // Check start time to see if there is a year rollover, and save the old file
+                       
                         Utils.writeBytesToFile(logRollupFile.getAbsolutePath(), logRollup.toString());
+                        
+                         if(year > SolrMonitor.getSTART_DATE_CAL().get(Calendar.YEAR)){
+                            logRollupFile.renameTo(new File(year+"_"+ROLLUP_FILE_NAME));
+                            initJSONObject();
+                        }
+                         
                     } else {
                         Log.log(Log.class, "currCount: " + currCount + " save x times: " + saveEveryXTimes);
                     }
@@ -197,7 +206,7 @@ public class Log {
 
                 logRollupFile.createNewFile();
 
-            }
+            
             Calendar cal = Calendar.getInstance();
             int iDay = 1;
             logRollup = new JSONObject();
@@ -233,6 +242,11 @@ public class Log {
             }
 
             Utils.writeBytesToFile(logRollupFile.getAbsolutePath(), logRollup.toString());
+            } else {
+                Log.log("Stats File Exists...");
+                 String historyStr = Utils.streamToString(new FileInputStream(logRollupFile));
+                 logRollup = new JSONObject(historyStr);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
