@@ -16,24 +16,34 @@ import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpResponse;
 
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.routing.HttpRoute;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import solrmonitor.SolrMonitor;
 import solrmonitor.auth.BasicAuthenticator;
+import solrmonitor.tasks.model.MonitoredQueryResponse;
+import solrmonitor.tasks.model.PingResponse;
 import solrmonitor.util.Log;
+import static solrmonitor.util.Log.isPlaybackLoggingEnabled;
 import solrmonitor.util.SolrClusterStateHelper;
 import solrmonitor.util.Utils;
+import static solrmonitor.util.Utils.streamToString;
 
 /**
  *
@@ -44,16 +54,26 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
     public final static String COLLECTION_LIST_URL_PART = "/solr/admin/collections?action=LIST&wt=json";
     public final static String STATUS_URL_PART = "/solr/admin/cores?action=STATUS&wt=json";
 
-    private HttpClient client = null;
+    private CloseableHttpClient client = null;
+    private static HttpResponse response = null;
+    private HttpGet request = null;
+
     private Properties props = null;
     private CloudSolrClient cloudClient = null;
     private String solrBaseUrl = "";
+    private static final SolrQuery query = new SolrQuery();
     public static final String propsFileName = "solr_monitor.properties";
     private long maxResponseTime = 100000;
     private boolean firstRun = true;
     private String solrHost = null;
+    private boolean isFusionEnabled = false;
 
     public SolrPingTimerTask() {
+        preinit();
+        final String endpoint = props.getProperty("api.endpoint.type");
+        if (endpoint.equals("fusion")) {
+            isFusionEnabled = true;
+        }
         init();
     }
 
@@ -64,18 +84,21 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
 
     public void run() {
 
-        System.out.println("Ping SOLR...");
-        String toEmail = props.getProperty("mail.to.email");
+        Log.log("Ping SOLR...");
+
+        final String toEmail = props.getProperty("mail.to.email");
         String msg = "";
         String subject = "";
+        PingResponse resp = null;
         try {
-            if (!firstRun) {
+            if (!firstRun && !isFusionEnabled) {
                 cloudClient.connect();
             } else {
                 firstRun = false;
             }
             boolean online = true;
-            SolrPingResponse resp = isOnline();
+
+            resp = isOnline();
             JSONObject json = new JSONObject();
             json.put("timestamp", System.currentTimeMillis());
 
@@ -103,7 +126,7 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
                 Log.logRollup(Status.ZOOKEEPER_TIMEOUT, System.currentTimeMillis());
             } else {
                 Log.logRollup(Status.ZOOKEEPER_OK, System.currentTimeMillis());
-                String message = SolrClusterStateHelper.checkShardState(solrHost);
+                final String message = SolrClusterStateHelper.checkShardState(solrHost);
                 if (!message.equals("")) {
                     subject = "ONE OR MORE SOLR SHARDS HAS BECOME INACTIVE";
                     msg += message;
@@ -120,10 +143,11 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
                 if (props.get("solr.test.query") != null
                         && !props.getProperty("solr.test.query").equals("")) {
                     Log.log(getClass(), "Running Solr Query Check with query: " + props.getProperty("solr.test.query") + "...");
-                    SolrQuery query = new SolrQuery();
-                    query.setQuery(props.getProperty("solr.test.query"));
-                    query.setRows(10);
-                    QueryResponse qresp = cloudClient.query(query);
+
+                   // query.setQuery(props.getProperty("solr.test.query"));
+                  //  query.setRows(10);
+                    MonitoredQueryResponse qresp = doQuery();//cloudClient.query(query);
+                    Log.log("Final status: " + qresp.getStatus());
                     if (qresp.getStatus() > 0) {
                         online = false;
                         subject = "ERROR EXECUTING SOLR QUERY ";
@@ -140,27 +164,43 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
 
             if (!online) {
 
-                System.out.println("SOLR OFFLINE... SEND EMAIL! ");
+                Log.log("SOLR OFFLINE... SEND EMAIL! ");
                 sendmail(toEmail, subject, msg);
                 json.put("status", Status.SOLR_DOWN);
                 json.put("status_msg", Status.SOLR_DOWN.name());
+                Log.logRollup(Status.SOLR_DOWN, System.currentTimeMillis());
             } else {
-                System.out.println("Solr is ONLINE..." + resp.getElapsedTime());
+                Log.log("Solr is ONLINE..." + resp.getElapsedTime());
                 json.put("status", Status.OK);
                 json.put("status_msg", Status.OK.name());
                 Log.logRollup(Status.OK, System.currentTimeMillis());
             }
 
-            cloudClient.close();
-            StatsUpdateTask.addToQueue(json);
+            if (cloudClient != null) {
+                cloudClient.close();
+            }
+            if (isPlaybackLoggingEnabled()) {
+                StatsUpdateTask.addToQueue(json);
+            } else {
+                json = null;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             Log.logRollup(Status.EXCEPTION_500, System.currentTimeMillis());
+        } finally {
+            resp = null;
+
         }
     }
 
+    private void preinit() {
+        props = SolrMonitor.getProperties();
+        maxResponseTime = Long.parseLong(props.getProperty("ping.max.response.time"));
+        fusionClientInit();
+    }
+
     private void init() {
-        PoolingClientConnectionManager cm = new PoolingClientConnectionManager();
+        // PoolingClientConnectionManager cm = new PoolingClientConnectionManager();
         try {
             if (props == null) {
                 props = new Properties();
@@ -180,14 +220,15 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
             UsernamePasswordCredentials credentials
                     = new UsernamePasswordCredentials(props.getProperty("solr.admin.user"), props.getProperty("solr.admin.pwd"));
             provider.setCredentials(AuthScope.ANY, credentials);
+            if (!isFusionEnabled) {
+                // client = new DefaultHttpClient(cm);
+                client = HttpClientBuilder.create()
+                        .setDefaultCredentialsProvider(provider)
+                        .build();
 
-            // client = new DefaultHttpClient(cm);
-            client = HttpClientBuilder.create()
-                    .setDefaultCredentialsProvider(provider)
-                    .build();
-
-            cloudClient = new CloudSolrClient(props.getProperty("solr.zookeeper.port"), client);
-            cloudClient.setDefaultCollection(props.getProperty("solr.default.collection"));
+                cloudClient = new CloudSolrClient(props.getProperty("solr.zookeeper.port"), client);
+                cloudClient.setDefaultCollection(props.getProperty("solr.default.collection"));
+            }
 
             System.out.println("Solr Base URL: " + solrBaseUrl);
 
@@ -197,11 +238,17 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
         }
     }
 
-    public SolrPingResponse isOnline() {
+    public PingResponse isOnline() {
         boolean result = true;
-        SolrPingResponse resp = null;
+        PingResponse resp = null;
         try {
-            resp = cloudClient.ping();
+            if (!isFusionEnabled) {
+                resp = new PingResponse(cloudClient.ping());
+            } else {
+                resp = new PingResponse(0);
+
+                // HttpGet request = new HttpGet(props.getProperty("api.url.to.monitor"));
+            }
             if (resp == null) {
                 System.out.println("Ping Response was NULL");
                 result = false;
@@ -286,6 +333,33 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
         }
     }
 
+    public MonitoredQueryResponse doQuery() {
+        MonitoredQueryResponse response = null;
+        try {
+            if (isFusionEnabled) {
+                // dishnetwork/select?q=*:*&wt=json
+               /* HttpGet request = new HttpGet(props.getProperty("fusion.query.endpoint"));
+                HttpResponse resp = client.execute(request);
+                Log.log(getClass(), "HttpResponse: " + resp.getStatusLine().getStatusCode());
+                if (resp.getStatusLine().getStatusCode() < 300) {
+                    response = new MonitoredQueryResponse(0);
+                } else {
+                    response = new MonitoredQueryResponse(resp);
+                }*/
+                response = new MonitoredQueryResponse(0);
+               apiCheck();
+
+            } else {
+                query.setQuery(props.getProperty("solr.test.query"));
+                query.setRows(1);
+                response = new MonitoredQueryResponse(cloudClient.query(query));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return response;
+    }
+
     public JSONArray getCollections() {
         JSONArray collections = null;
         String collectionUrl = "";
@@ -305,6 +379,91 @@ public class SolrPingTimerTask extends TimerTask implements Runnable {
         collections = obj.getJSONArray("collections");
 
         return collections;
+    }
+
+    private void fusionClientInit() {
+        try {
+            
+            PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+// Increase max total connection to 200
+cm.setMaxTotal(200);
+// Increase default max connection per route to 20
+cm.setDefaultMaxPerRoute(20);
+// Increase max connections for localhost:80 to 50
+HttpHost localhost = new HttpHost(props.getProperty("api.host"), Integer.parseInt(props.getProperty("api.port")));
+cm.setMaxPerRoute(new HttpRoute(localhost), 50);
+
+/*CloseableHttpClient httpClient = HttpClients.custom()
+        .setConnectionManager(cm)
+        .build();*/
+
+            CredentialsProvider provider = new BasicCredentialsProvider();
+            String user = SolrMonitor.getProperties().getProperty("api.basic.auth.user");
+            String pwd = SolrMonitor.getProperties().getProperty("api.basic.auth.pwd");;
+            String fusionUrl = SolrMonitor.getProperties().getProperty("api.basic.auth.login.url");;
+
+            Log.log(APICheckTask.class, "User: " + user + " pwd: " + pwd + " fusion: " + fusionUrl);
+
+            String authJson = "{\"username\":\"" + user + "\", \"password\":\"" + pwd + "\"}";
+            String authUrl = fusionUrl;// + "/api/session?realmName=native";
+
+            UsernamePasswordCredentials credentials
+                    = new UsernamePasswordCredentials(user, pwd);
+            provider.setCredentials(AuthScope.ANY, credentials);
+
+            client = HttpClientBuilder.create()
+                    .setDefaultCredentialsProvider(provider)
+                     .setConnectionManager(cm)
+                    .build();
+
+            String result = "";
+
+            HttpPost request = new HttpPost(authUrl);
+            StringEntity params = new StringEntity(authJson);
+            request.addHeader("content-type", "application/json");
+            request.setEntity(params);
+            response = client.execute(request);
+            // result will be empty on success
+            result = streamToString(response.getEntity().getContent());
+            System.out.println("auth reponse: " + result);
+            EntityUtils.consume(response.getEntity());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private void apiCheck(){
+         try{
+            Log.log("API Check...");
+            request = new HttpGet(SolrMonitor.getProperties().getProperty("fusion.query.endpoint"));
+            response = client.execute(request);
+            if(response.getStatusLine().getStatusCode() < 399){
+                Log.logRollup(SolrPingTimerTask.Status.API_OKAY, System.currentTimeMillis());
+            } else {
+                int status = response.getStatusLine().getStatusCode();
+                if(status < 299){
+                     Log.logRollup(SolrPingTimerTask.Status.API_OKAY, System.currentTimeMillis());
+                } else  if(status > 399 && status < 499){
+                     Log.logRollup(SolrPingTimerTask.Status.API_CLIENT_ERROR, System.currentTimeMillis());
+                } else if(status > 499){
+                     Log.logRollup(SolrPingTimerTask.Status.API_SERVER_ERROR, System.currentTimeMillis());
+                } else {
+                     Log.logRollup(SolrPingTimerTask.Status.API_DOWN, System.currentTimeMillis());
+                }
+            }
+            request.completed();
+            EntityUtils.consume(response.getEntity());
+              
+        }catch(Exception e){
+            e.printStackTrace();
+             Log.logRollup(SolrPingTimerTask.Status.API_DOWN, System.currentTimeMillis());
+       
+        } finally {
+             request = null;
+             response = null;
+             
+        }
     }
 
     public static enum Status {

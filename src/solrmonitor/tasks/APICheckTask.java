@@ -20,14 +20,16 @@ import solrmonitor.SolrMonitor;
 import solrmonitor.util.Log;
 import static solrmonitor.util.Utils.streamToString;
 
-/**
+/** @deprecated 
+ *  Using SolrPingTimerTask only
  *
  * @author kevin
  */
 public class APICheckTask extends TimerTask implements Runnable {
     
-    private HttpClient client = null;
-    private HttpResponse response = null;
+    private static HttpClient client = null;
+
+    private static HttpResponse response = null;
     private HttpGet request = null;
     
    
@@ -60,17 +62,21 @@ public class APICheckTask extends TimerTask implements Runnable {
         }catch(Exception e){
             e.printStackTrace();
              Log.logRollup(SolrPingTimerTask.Status.API_DOWN, System.currentTimeMillis());
+       
+        } finally {
+             request = null;
+             response = null;
         }
     }
     
-       private  void init() {
+       private static void init() {
         try {
             CredentialsProvider provider = new BasicCredentialsProvider();
             String user = SolrMonitor.getProperties().getProperty("api.basic.auth.user");
             String pwd = SolrMonitor.getProperties().getProperty("api.basic.auth.pwd");;
             String fusionUrl = SolrMonitor.getProperties().getProperty("api.basic.auth.login.url");;
 
-           Log.log( getClass(), "User: " + user + " pwd: " + pwd + " fusion: " + fusionUrl);
+           Log.log( APICheckTask.class, "User: " + user + " pwd: " + pwd + " fusion: " + fusionUrl);
 
              String authJson = "{\"username\":\"" + user + "\", \"password\":\"" + pwd + "\"}";
             String authUrl = fusionUrl;// + "/api/session?realmName=native";
@@ -98,5 +104,16 @@ public class APICheckTask extends TimerTask implements Runnable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+       
+        /**
+     * @return the client
+     */
+    public static HttpClient getClient() {
+        
+         if(client == null){
+            init();
+        }
+        return client;
     }
 }
