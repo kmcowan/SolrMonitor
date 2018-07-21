@@ -111,7 +111,7 @@ public class RESTService extends GenericServlet implements MessageHandler, HttpH
                 String page = ex.getRequestURI().getPath();
                 String content = "";
                 if (page.equals("/")) {
-                    page += "index.html";
+                    page += "index";
                     contentType = "text/html";
                 } else {
                     final String pg = page;
@@ -165,22 +165,42 @@ public class RESTService extends GenericServlet implements MessageHandler, HttpH
 
                 } else {
                     Log.log(RESTService.class, "Process " + ex.getRequestMethod() + " request as NON-SERVICE " + page);
-                    if (page.startsWith("/")) {
+                    if (page.trim().equals("/")) {
+                        page = "index";
+                    } else if (page.startsWith("/")) {
                         page = page.substring(1);
                     }
 
                     final String pg = page;
                     switch (pg) {
                         case "status":
-                             ex.getResponseHeaders().add("Content-Type", "text/html");
+                            ex.getResponseHeaders().add("Content-Type", "text/html");
                             ex.sendResponseHeaders(200, 0);
                             out.write(HTML.HEADER.getBytes());
+                           out.write(HTML.NAV.getBytes());
                             out.write(ActionProcessor.getStatusContent().getBytes());
                             out.write(HTML.FOOTER.getBytes());
                             break;
 
+                        case "index":
+                            ex.getResponseHeaders().add("Content-Type", "text/html");
+                            ex.sendResponseHeaders(200, 0);
+                            out.write(HTML.HEADER.getBytes());
+                            out.write(ActionProcessor.getIndexContent().getBytes());
+                            out.write(HTML.NAV.getBytes());
+                            out.write(HTML.FOOTER.getBytes());
+                            break;
+
+                        case "monthly":
+                            ex.getResponseHeaders().add("Content-Type", "text/html");
+                            ex.sendResponseHeaders(200, 0);
+                            out.write(HTML.HEADER_AND_NAV.getBytes());
+                            out.write(ActionProcessor.getMonthlyContent().getBytes());
+                            out.write(HTML.FOOTER.getBytes());
+                            break;
+
                         default:
-                            if(page != null && !HTML.pageExists(page)){
+                            if (page != null && !HTML.pageExists(page)) {
                                 page = "404.html";
                             }
                             java.io.InputStream stream = HTML.class.getResourceAsStream(page);
@@ -192,8 +212,6 @@ public class RESTService extends GenericServlet implements MessageHandler, HttpH
                             out.write(bytes);
                             break;
                     }
-
-                    
 
                 }
 

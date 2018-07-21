@@ -16,8 +16,9 @@ import solrmonitor.util.Utils;
  * @author kevin
  */
 public class HTML {
- 
-    public final static String HEADER = Utils.streamToString(HTML.class.getResourceAsStream("header.html"));
+   public final static String NAV = Utils.streamToString(HTML.class.getResourceAsStream("nav.html"));
+   public final static String HEADER =  Utils.streamToString(HTML.class.getResourceAsStream("header.html"));
+    public final static String HEADER_AND_NAV = HEADER + NAV;
     public final static String FOOTER = Utils.streamToString(HTML.class.getResourceAsStream("footer.html"));
     public static String getPage(Page p) {
         String page = "";
@@ -66,7 +67,8 @@ public class HTML {
         index,
         footer,
         header,
-        notfound
+        notfound,
+        nav
     }
     
 }

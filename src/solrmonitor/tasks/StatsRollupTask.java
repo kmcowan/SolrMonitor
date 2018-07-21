@@ -23,8 +23,8 @@ import solrmonitor.util.Utils;
  */
 public class StatsRollupTask extends TimerTask implements Runnable {
 
-    private static final Status[] OKAY = {Status.API_OKAY, Status.OK, Status.CLUSTER_STATE_OKAY, Status.ZOOKEEPER_OK};
-    private static final Status[] NOT_OKAY = {Status.API_CLIENT_ERROR,
+    public static final Status[] OKAY = {Status.API_OKAY, Status.OK, Status.CLUSTER_STATE_OKAY, Status.ZOOKEEPER_OK};
+    public static final Status[] NOT_OKAY = {Status.API_CLIENT_ERROR,
         Status.API_DOWN,
         Status.API_SERVER_ERROR,
         Status.CLUSTER_STATE_CONTAINS_INACTIVE_REPLICAS,
@@ -40,7 +40,7 @@ public class StatsRollupTask extends TimerTask implements Runnable {
         Status.ZOOKEEPER_ERROR,
         Status.ZOOKEEPER_TIMEOUT};
 
-    private static final String[] DAYS_OF_WEEK = new String[]{"Sunday", "Monday", "Tuesday", "Wednesday", "Thusday",
+    public static final String[] DAYS_OF_WEEK = new String[]{"Sunday", "Monday", "Tuesday", "Wednesday", "Thusday",
         "Friday", "Saturday"};
 
     private static final Calendar now = Calendar.getInstance();
@@ -267,7 +267,7 @@ public class StatsRollupTask extends TimerTask implements Runnable {
         return DAYS_OF_WEEK[now.get(Calendar.DAY_OF_WEEK) - 1];
     }
 
-    protected JSONObject doRollupOneMonth(Months month, JSONObject stats) {
+    public JSONObject doRollupOneMonth(Months month, JSONObject stats) {
         JSONObject json = new JSONObject();
         double monthTotal = 0;
         double monthSuccess = 0;
