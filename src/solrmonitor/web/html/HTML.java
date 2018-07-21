@@ -17,6 +17,8 @@ import solrmonitor.util.Utils;
  */
 public class HTML {
  
+    public final static String HEADER = Utils.streamToString(HTML.class.getResourceAsStream("header.html"));
+    public final static String FOOTER = Utils.streamToString(HTML.class.getResourceAsStream("footer.html"));
     public static String getPage(Page p) {
         String page = "";
         try{
@@ -36,9 +38,9 @@ public class HTML {
     public static String getHTMLContent(String content){
          String page = "";
         try{
-        page = Utils.streamToString(HTML.class.getResourceAsStream(Page.top_half.name()+".html"));
+        page = Utils.streamToString(HTML.class.getResourceAsStream(Page.header.name()+".html"));
         page += content;
-        page += Utils.streamToString(HTML.class.getResourceAsStream(Page.bottom_half.name()+".html"));
+        page += Utils.streamToString(HTML.class.getResourceAsStream(Page.footer.name()+".html"));
         }catch(Exception e){
             e.printStackTrace();
             page = Utils.streamToString(HTML.class.getResourceAsStream("404.html"));
@@ -47,14 +49,23 @@ public class HTML {
         return page;
     }
     
+    public static String getPageWithContent(String content){
+        return HEADER + content + FOOTER;
+    }
+    
+    public static boolean pageExists(String page){
+        for(int i=0; i<Page.values().length; i++){
+            if(page.contains(Page.values()[i].name())){
+                return true;
+            }
+        }
+        return false;
+    }
+    
     public static enum Page {
         index,
-        users,
-        permissions,
-        roles,
-        permissions_params,
-        top_half,
-        bottom_half,
+        footer,
+        header,
         notfound
     }
     

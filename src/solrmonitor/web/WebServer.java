@@ -13,7 +13,9 @@ import java.net.URI;
 import java.net.URL;
 import java.util.Date;
 import java.util.HashMap;
+import org.json.JSONObject;
 import solrmonitor.util.Log;
+import solrmonitor.util.Utils;
 
 /**
  *
@@ -22,6 +24,7 @@ import solrmonitor.util.Log;
 public class WebServer {
 
     private static HashMap<String, String> config = null;
+    public static final  JSONObject WEBCONFIG = new JSONObject(Utils.streamToString(WebServer.class.getResourceAsStream("webconfig.json")));
 
     private WebServer() {
 
@@ -32,9 +35,12 @@ public class WebServer {
             config = argsAsMap(args);
             int port = 8081;
             String host = config.get("-s");
+           
             
             if (config != null && config.get("-p") != null) {
                 port = Integer.parseInt(config.get("-p"));
+            } else {
+                port = WEBCONFIG.getInt("port");
             }
             Log.log(WebServer.class, "Starting web server on port: " + port);
             HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);

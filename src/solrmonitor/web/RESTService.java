@@ -5,7 +5,6 @@
  */
 package solrmonitor.web;
 
-
 import solrmonitor.web.html.HTML;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
@@ -40,7 +39,6 @@ public class RESTService extends GenericServlet implements MessageHandler, HttpH
 
     private String message;
     public final static ProcessorServlet PROCESSOR = new ProcessorServlet();
-    
 
     @Override
     public void init() throws ServletException {
@@ -101,10 +99,9 @@ public class RESTService extends GenericServlet implements MessageHandler, HttpH
 
     @Override
     public void handle(HttpExchange ex) throws IOException {
-             OutputStream out = ex.getResponseBody();
-         
+        OutputStream out = ex.getResponseBody();
+
         if (isValidRequestMethod(ex)) {
-       
 
             try {
                 String contentType = "application/json";
@@ -112,14 +109,22 @@ public class RESTService extends GenericServlet implements MessageHandler, HttpH
                 JSONObject action = null;
 
                 String page = ex.getRequestURI().getPath();
+                String content = "";
                 if (page.equals("/")) {
                     page += "index.html";
                     contentType = "text/html";
+                } else {
+                    final String pg = page;
+                    switch (pg) {
+                        case "/status":
+                            content = ActionProcessor.getStatusContent();
+                            break;
+                    }
                 }
 
                 boolean isService = false;
                 String actionPage = page;
-               /* if (actionPage.startsWith("/")) {
+                /* if (actionPage.startsWith("/")) {
                     actionPage = actionPage.substring(1);
                 }
                 if (actionManager.isValidAction(actionPage)) {
@@ -157,19 +162,39 @@ public class RESTService extends GenericServlet implements MessageHandler, HttpH
                     }
                 } else if (!isService && isValidAction) {
                     Log.log(RESTService.class, "Process ACTION Request: " + actionPage);
-                  
+
                 } else {
                     Log.log(RESTService.class, "Process " + ex.getRequestMethod() + " request as NON-SERVICE " + page);
                     if (page.startsWith("/")) {
                         page = page.substring(1);
                     }
-                    ex.sendResponseHeaders(200, 0);
-                    java.io.InputStream stream = HTML.class.getResourceAsStream(page);
-                    byte bytes[] = Utils.streamToBytes(stream);
-                    if (Utils.isHTML(bytes) || page.contains(".html")) {
-                        ex.getResponseHeaders().add("Content-Type", "text/html");
+
+                    final String pg = page;
+                    switch (pg) {
+                        case "status":
+                             ex.getResponseHeaders().add("Content-Type", "text/html");
+                            ex.sendResponseHeaders(200, 0);
+                            out.write(HTML.HEADER.getBytes());
+                            out.write(ActionProcessor.getStatusContent().getBytes());
+                            out.write(HTML.FOOTER.getBytes());
+                            break;
+
+                        default:
+                            if(page != null && !HTML.pageExists(page)){
+                                page = "404.html";
+                            }
+                            java.io.InputStream stream = HTML.class.getResourceAsStream(page);
+                            byte bytes[] = Utils.streamToBytes(stream);
+                            if (Utils.isHTML(bytes) || page.contains(".html")) {
+                                ex.getResponseHeaders().add("Content-Type", "text/html");
+                            }
+                            ex.sendResponseHeaders(200, 0);
+                            out.write(bytes);
+                            break;
                     }
-                    out.write(bytes);
+
+                    
+
                 }
 
                 out.flush();
@@ -183,29 +208,28 @@ public class RESTService extends GenericServlet implements MessageHandler, HttpH
                 final String method = ex.getRequestMethod();
                 switch (method) {
                     case "HEAD":
-                        
-                         ex.getResponseHeaders().add("X-Powered-by", "Capture Club HAIDIE::EMPATHS Platform");
-                         ex.sendResponseHeaders(0, 0);
-                         break;
+
+                        ex.getResponseHeaders().add("X-Powered-by", "Capture Club HAIDIE::EMPATHS Platform");
+                        ex.sendResponseHeaders(0, 0);
+                        break;
 
                     case "OPTIONS":
                         ex.getResponseHeaders().add("X-Powered-by", "Capture Club HAIDIE::EMPATHS Platform");
                         break;
-                        
+
                     default:
                         ex.getResponseHeaders().add("message", "I don't understand the method by which you're asking me questions.  " + method + " is not a valid method for this system. ");
-              
+
                         break;
                 }
-                
-                   out.flush();
+
+                out.flush();
                 ex.close();
             } catch (Exception e) {
 
             }
         }
-        
-        
+
     }
 
     private boolean isValidRequestMethod(HttpExchange ex) {

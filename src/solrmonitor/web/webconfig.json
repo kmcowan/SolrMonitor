@@ -1,0 +1,8 @@
+{
+    "name": "Capture Club Solr/Fusion Monitoring Service",
+    "host": "localhost",
+    "port": "9091",
+    "actions": [
+        {"path": "/status" }
+    ]
+}
