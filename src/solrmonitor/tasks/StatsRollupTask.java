@@ -14,6 +14,7 @@ import solrmonitor.SolrMonitor;
 import solrmonitor.util.Log;
 import solrmonitor.util.Log.Months;
 import solrmonitor.tasks.SolrPingTimerTask.Status;
+import solrmonitor.util.JsonUtils;
 import solrmonitor.util.Utils;
 
 /**
@@ -44,6 +45,7 @@ public class StatsRollupTask extends TimerTask implements Runnable {
 
     private static final Calendar now = Calendar.getInstance();
 
+    @Override
     public void run() {
 
         JSONObject result = null;
@@ -118,7 +120,7 @@ public class StatsRollupTask extends TimerTask implements Runnable {
     private JSONObject rollupMONTHLY(int quantity, int startHour, int stopHour) {
         JSONObject json = new JSONObject();
 
-        JSONObject stats = Log.getLogRollup();
+        JSONObject stats = JsonUtils.clone(Log.getLogRollup());
 
         String[] daysToMonitor = SolrMonitor.getProperties().getProperty("stats.days.to.monitor").split(",");
         int count = 0;
@@ -127,72 +129,26 @@ public class StatsRollupTask extends TimerTask implements Runnable {
         JSONObject data = new JSONObject();
         int year = Calendar.getInstance().get(Calendar.YEAR);
         for (int m = 0; m < Months.values().length; m++) {
-            JSONObject monthData = new JSONObject();
-            Months month = Months.values()[m];
-            double monthTotal = 0;
-            double monthSuccess = 0;
-            double monthFailure = 0;
-            double monthRollup = 0;
 
-            JSONObject days = stats.getJSONObject(month.name());
-            Iterator<String> keys = days.keys();
-            while (keys.hasNext()) {
-
-                double dayTotal = 0;
-                double daySuccess = 0;
-                double dayFailure = 0;
-                double dayRollup = 0;
-                String tkey = keys.next();
-                int day = Integer.parseInt(tkey.substring(tkey.indexOf("_") + 1, tkey.length()));
-
-                JSONObject hours = days.getJSONObject(tkey);
-                Iterator<String> hourKeys = hours.keys();
-                JSONObject dayData = new JSONObject();
-
-                while (hourKeys.hasNext()) {
-                    String hourKey = hourKeys.next();
-                    JSONObject hourData = hours.getJSONObject(hourKey);
-                    JSONObject tdata = new JSONObject();
-                    tdata.put("raw", hourData);
-                    tdata.put("tkey", tkey);
-                    tdata.put("rollup", getRollupTotal(hourData));
-
-                    int hour = Integer.parseInt(hourKey.substring(hourKey.indexOf("_") + 1, hourKey.length()));
-                    if ((isDayToMonitor(daysToMonitor, getDayOfWeek(year, month.ordinal(), day))
-                            && (hour >= startHour && hour <= stopHour)) || startHour < 0) {
-                        dayTotal = dayTotal + tdata.getJSONObject("rollup").getDouble("total");
-                        daySuccess = daySuccess + tdata.getJSONObject("rollup").getDouble("success");
-                        dayFailure = dayFailure + tdata.getJSONObject("rollup").getDouble("failure");
-                        //   dayRollup = dayRollup + tdata.getJSONObject("rollup").getDouble("rollup");
-                        dayData.put(hourKey, tdata);
-                    }
-                }
-                dayRollup = Math.round((dayTotal / (daySuccess - dayFailure)) * 100);
-                dayData.put("rollup", dayRollup);
-                dayData.put("success", daySuccess);
-                dayData.put("failure", dayFailure);
-
-                monthTotal = monthTotal + dayTotal;
-                monthSuccess = monthSuccess + daySuccess;
-                monthFailure = monthFailure + dayFailure;
-                monthData.put(tkey, dayData);
-            }
-
-            if (count > 0) {
+            JSONObject monthData = doRollupOneMonth(Months.values()[m], stats);//new JSONObject();
+            
+            if (m > 0) {
                 key += "-";
             }
-            key += month.name();
-            count++;
+
             if (count == quantity) {
                 json.put(key, data);
                 data = new JSONObject();
-                key = "";
+                key = Months.values()[m].name();
                 count = 0;
 
+            } else {
+                key += Months.values()[m].name();
+
             }
-            monthRollup = Math.round((monthSuccess / monthTotal) * 100);
-            monthData.put("rollup", monthRollup);
-            data.put(month.name(), monthData);
+            count++;
+
+            data.put(Months.values()[m].name(), monthData);
         }
 
         json.put(key, data);
@@ -212,13 +168,15 @@ public class StatsRollupTask extends TimerTask implements Runnable {
         //  JSONObject result = new JSONObject();
         hourData = doHourlyRollup(hourData);
         double success = hourData.getDouble("success");
-        double failure = hourData.getDouble("failure");
+      //  double failure = hourData.getDouble("failure");
         double total = hourData.getDouble("total");
 
         //    hourData.put("total", total);
         //    hourData.put("success", success);
         //    hourData.put("failure", failure);
         if (total > 0) {
+            hourData.put("rollup", Math.round((success / total) * 100));
+/*
             if (success > 0) {
                 double uptime = Math.round((success / total) * 100);
                 hourData.put("uptime", uptime);
@@ -232,15 +190,12 @@ public class StatsRollupTask extends TimerTask implements Runnable {
             } else {
                 hourData.put("downtime", 0);
             }
+            */
         } else {
-            hourData.put("uptime", 0);
-            hourData.put("downtime", 0);
+          //  hourData.put("uptime", 0);
+          //  hourData.put("downtime", 0);
         }
-        if (hourData.getDouble("uptime") >= hourData.getDouble("downtime")) {
-            hourData.put("rollup", Math.round(hourData.getDouble("uptime") - hourData.getDouble("downtime")));
-        } else {
-            hourData.put("rollup", Math.round(hourData.getDouble("downtime") - hourData.getDouble("uptime")));
-        }
+    
 
         return hourData;
     }
@@ -248,7 +203,10 @@ public class StatsRollupTask extends TimerTask implements Runnable {
     private JSONObject doHourlyRollup(JSONObject hourData) {
         Iterator<String> iter = hourData.keys();
         String key;
-        long value, success = 0, failure = 0, total = 0;
+        long value = 0;
+        long success = 0;
+        long failure = 0;
+        long total = 0;
 
         while (iter.hasNext()) {
             key = iter.next();
@@ -266,8 +224,8 @@ public class StatsRollupTask extends TimerTask implements Runnable {
         hourData.put("failure", failure);
         hourData.put("total", total);
         hourData.put("rollup", 0);
-        
-        if(total > 0){
+
+        if (total > 0) {
             hourData.put("rollup", Math.round((success / total) * 100));
         }
 
@@ -309,29 +267,34 @@ public class StatsRollupTask extends TimerTask implements Runnable {
         return DAYS_OF_WEEK[now.get(Calendar.DAY_OF_WEEK) - 1];
     }
 
-    protected JSONObject doRollupOneMonth(Months month) {
+    protected JSONObject doRollupOneMonth(Months month, JSONObject stats) {
         JSONObject json = new JSONObject();
         double monthTotal = 0;
         double monthSuccess = 0;
         double monthFailure = 0;
         double monthRollup = 0;
-        JSONObject stats = Log.getLogRollup();
+        if (stats == null) {
+            stats = Log.getLogRollup();
+        }
         JSONObject days = stats.getJSONObject(month.name());
         Iterator<String> keys = days.keys();
         while (keys.hasNext()) {
             String dayKey = keys.next();
-            JSONObject dayData = days.getJSONObject(dayKey);
-            dayData = doRollupOneDay(dayData);
-
-            monthTotal = monthTotal + dayData.getDouble("total");
-            monthSuccess = monthSuccess + dayData.getDouble("success");
-            monthFailure = monthFailure + dayData.getDouble("failure");
+            if (dayKey.contains("day_")) {
+                JSONObject dayData = days.getJSONObject(dayKey);
+                dayData = doRollupOneDay(dayData);
+                if(dayData.getDouble("total") > 0){
+                monthTotal = monthTotal + dayData.getDouble("total");
+                monthSuccess = monthSuccess + dayData.getDouble("success");
+                monthFailure = monthFailure + dayData.getDouble("failure");
+                }
+            }
         }
         if (monthTotal > 0) {
-       
-           monthRollup = Math.round(monthSuccess / (monthTotal) * 100);
+
+            monthRollup = Math.round(monthSuccess / (monthTotal) * 100);
         }
-        
+
         json.put("total", monthTotal);
         json.put("success", monthSuccess);
         json.put("failure", monthFailure);
@@ -352,18 +315,20 @@ public class StatsRollupTask extends TimerTask implements Runnable {
 
         while (hourKeys.hasNext()) {
             hourKey = hourKeys.next();
-            hourData = day.getJSONObject(hourKey);
-            hourData = doHourlyRollup(hourData);//getRollupTotal(hourData);
+            if (hourKey.contains("hour_")) {
+                hourData = day.getJSONObject(hourKey);
+                hourData = getRollupTotal(hourData);
 
-            dayTotal = dayTotal + hourData.getDouble("total");
-            daySuccess = daySuccess + hourData.getDouble("success");
-            dayFailure = dayFailure + hourData.getDouble("failure");
+                dayTotal = dayTotal + hourData.getDouble("total");
+                daySuccess = daySuccess + hourData.getDouble("success");
+                dayFailure = dayFailure + hourData.getDouble("failure");
+            }
 
         }
-      if(dayTotal > 0){
-   
-       dayRollup = Math.round((daySuccess / (dayTotal)) * 100);
-      } 
+        if (dayTotal > 0) {
+
+            dayRollup = Math.round((daySuccess / (dayTotal)) * 100);
+        }
 
         day.put("rollup", dayRollup);
         day.put("success", daySuccess);
@@ -375,15 +340,42 @@ public class StatsRollupTask extends TimerTask implements Runnable {
 
     public static void main(String[] args) {
         Calendar cal = Calendar.getInstance();
+      //  Timer timer = new Timer();
 
         System.out.println("Day of week: " + getDayOfWeek(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)));
-        StatsRollupTask task = new StatsRollupTask();
-        JSONObject json = task.doRollupOneMonth(Months.values()[cal.get(Calendar.MONTH)]);
+        /*    StatsRollupTask task = new StatsRollupTask();
+       JSONObject json2 = task.doRollupOneMonth(Months.values()[cal.get(Calendar.MONTH)], Log.getLogRollup());
         
+       File rollup = new File("test_rollup_month.json");
+        Utils.writeBytesToFile(rollup.getAbsolutePath(), json2.toString());
+         */
+        
+        StatsRollupTask task2 = new StatsRollupTask();
+         task2.run();
+        JSONObject json = task2.doRollupOneMonth(Months.values()[cal.get(Calendar.MONTH)], JsonUtils.clone(Log.getLogRollup()));
         File rollup = new File("test_rollup_month.json");
-         Utils.writeBytesToFile(rollup.getAbsolutePath(), json.toString());
-         
-        
+        Utils.writeBytesToFile(rollup.getAbsolutePath(), json.toString());
+
+        StatsRollupTask task = new StatsRollupTask();
+        JSONObject json2 = task.doRollupOneMonth(Months.values()[cal.get(Calendar.MONTH)], JsonUtils.clone(Log.getLogRollup()));
+
+        File rollup2 = new File("test_rollup_month2.json");
+        Utils.writeBytesToFile(rollup2.getAbsolutePath(), json2.toString());
+        System.exit(0);
+
+        // timer.schedule(new RollOneMonth(), 500);
     }
 
+}
+
+class RollOneMonth extends TimerTask implements Runnable {
+
+    public void run() {
+        Calendar cal = Calendar.getInstance();
+        StatsRollupTask task = new StatsRollupTask();
+        JSONObject json2 = task.doRollupOneMonth(Months.values()[cal.get(Calendar.MONTH)], Log.getLogRollup());
+
+        File rollup = new File("test_rollup_month.json");
+        Utils.writeBytesToFile(rollup.getAbsolutePath(), json2.toString());
+    }
 }
