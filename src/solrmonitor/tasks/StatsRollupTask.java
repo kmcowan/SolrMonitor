@@ -232,7 +232,7 @@ public class StatsRollupTask extends TimerTask implements Runnable {
         return hourData;
     }
 
-    private boolean isOkayKey(String key) {
+    public static boolean isOkayKey(String key) {
         for (int i = 0; i < OKAY.length; i++) {
             if (OKAY[i].name().equals(key)) {
                 return true;
@@ -242,7 +242,7 @@ public class StatsRollupTask extends TimerTask implements Runnable {
         return false;
     }
 
-    private boolean isOkayNotKey(String key) {
+    public static boolean isOkayNotKey(String key) {
         for (int i = 0; i < NOT_OKAY.length; i++) {
             if (NOT_OKAY[i].name().equals(key)) {
                 return true;

@@ -170,8 +170,8 @@ public class SolrMonitor {
     }
 
     private static synchronized void run(Runnable task) {
-        task.run();
-       // EXECUTOR.execute(task);
+       // task.run();
+        EXECUTOR.execute(task);
     }
 
     public static Properties getProperties() {
