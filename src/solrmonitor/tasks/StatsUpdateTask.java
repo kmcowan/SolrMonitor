@@ -16,6 +16,7 @@ import solrmonitor.util.Log;
  */
 public class StatsUpdateTask extends TimerTask implements Runnable {
     
+    @SuppressWarnings("unchecked")
     private static final LinkedBlockingQueue<JSONObject> queue = new LinkedBlockingQueue();
     public StatsUpdateTask(){}
     

@@ -80,6 +80,7 @@ public class Utils {
         return path;
     }
 
+    @SuppressWarnings("unchecked")
     public static String mapKeysToString(Map map) {
         Iterator<String> iter = map.keySet().iterator();
         String result = "";
@@ -103,6 +104,7 @@ public class Utils {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     public static String mapValuesToString(Map map) {
         Iterator<String> iter = map.keySet().iterator();
         String result = "";
@@ -126,6 +128,7 @@ public class Utils {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     public static ArrayList<String> mapValuesToList(Map map) {
         Iterator<String> iter = map.keySet().iterator();
         ArrayList<String> result = new ArrayList<>();
@@ -148,6 +151,7 @@ public class Utils {
         return result;
     }
 
+    @SuppressWarnings("unchecked")
     public static String mapKeysAndValuesToString(Map map) {
         Iterator<String> iter = map.keySet().iterator();
         String result = "";
